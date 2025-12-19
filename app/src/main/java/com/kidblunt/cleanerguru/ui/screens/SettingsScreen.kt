@@ -60,30 +60,6 @@ fun SettingsScreen(
             )
 
             SettingsItem(
-                title = "Visit Website",
-                description = "Learn more about Clean Booster Pro",
-                icon = Icons.Default.Language,
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(Constants.WEBSITE_URL))
-                    context.startActivity(intent)
-                }
-            )
-
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-            SettingsItem(
-                title = "Support",
-                description = "Get help and support",
-                icon = Icons.Default.Help,
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(Constants.SUPPORT_URL))
-                    context.startActivity(intent)
-                }
-            )
-
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-            SettingsItem(
                 title = "Privacy Policy",
                 description = "Read our privacy policy",
                 icon = Icons.Default.PrivacyTip,
@@ -127,7 +103,7 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "Version 1.0",
+                        text = "Version 3",
                         style = MaterialTheme.typography.body2,
                         color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                     )

@@ -31,6 +31,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,10 +44,8 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
-import com.kidblunt.cleanerguru.ui.theme.CloudBlue
-import com.kidblunt.cleanerguru.ui.theme.ErrorRed
-import com.kidblunt.cleanerguru.ui.theme.SuccessGreen
-import com.kidblunt.cleanerguru.ui.theme.WarningOrange
+import com.kidblunt.cleanerguru.ui.theme.*
+import com.kidblunt.cleanerguru.ui.components.TwinklingStarsBackground
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -116,161 +115,192 @@ fun PhotoCleanupScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text("Photo Cleanup")
-                        if (photos.isNotEmpty()) {
-                            Text(
-                                text = "${photos.size} photos • ${formatFileSize(photos.sumOf { it.size })}",
-                                style = MaterialTheme.typography.caption,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                },
-                backgroundColor = CloudBlue,
-                contentColor = Color.White,
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    if (photos.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                selectedPhotos = if (selectedPhotos.size == photos.size) {
-                                    emptySet()
-                                } else {
-                                    photos.map { it.uri }.toSet()
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (selectedPhotos.size == photos.size) {
-                                    Icons.Default.CheckBoxOutlineBlank
-                                } else {
-                                    Icons.Default.CheckBox
-                                },
-                                contentDescription = "Select All"
-                            )
-                        }
-                        IconButton(
-                            onClick = { showAnalysis = !showAnalysis }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Analytics,
-                                contentDescription = "Analysis"
-                            )
-                        }
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            if (selectedPhotos.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = { showDeleteDialog = true },
-                    backgroundColor = ErrorRed
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = Color.White
-                    )
-                }
-            }
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Dark theme background with twinkling stars
+        TwinklingStarsBackground(
+            modifier = Modifier.fillMaxSize(),
+            starCount = 25,
+            starColor = NeonPink.copy(alpha = 0.4f)
+        )
+
+        // Gradient overlay for dark theme
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
-                !permissionState.status.isGranted -> {
-                    PermissionRequestContent(
-                        onRequestPermission = { permissionLauncher.launch(permission) },
-                        shouldShowRationale = permissionState.status.shouldShowRationale
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            DarkBackground.copy(alpha = 0.8f),
+                            CardBackground.copy(alpha = 0.9f),
+                            DarkBackground.copy(alpha = 0.8f)
+                        )
                     )
-                }
-                isScanning -> {
-                    LoadingContent("Scanning and analyzing photos...")
-                }
-                photos.isEmpty() -> {
-                    EmptyContent(
-                        onScanClick = {
-                            scope.launch {
-                                isScanning = true
-                                val scannedPhotos = scanPhotos(context.contentResolver)
-                                photos = scannedPhotos
-                                photoAnalysis = analyzePhotos(scannedPhotos)
-                                isScanning = false
-                                showAnalysis = true
-                            }
-                        }
-                    )
-                }
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        AnimatedVisibility(
-                            visible = showAnalysis,
-                            enter = slideInVertically() + fadeIn(),
-                            exit = slideOutVertically() + fadeOut()
-                        ) {
-                            photoAnalysis?.let { analysis ->
-                                PhotoAnalysisCard(
-                                    analysis = analysis,
-                                    onCategorySelected = { category ->
-                                        currentFilter = category
-                                        selectedPhotos = when (category) {
-                                            PhotoCategory.SCREENSHOTS -> analysis.screenshots.map { it.uri }.toSet()
-                                            PhotoCategory.LARGE_FILES -> analysis.largeFiles.map { it.uri }.toSet()
-                                            PhotoCategory.OLD_PHOTOS -> analysis.oldPhotos.map { it.uri }.toSet()
-                                            PhotoCategory.DUPLICATES -> analysis.duplicates.map { it.uri }.toSet()
-                                            PhotoCategory.OTHER -> emptySet()
-                                        }
-                                    }
+                )
+        )
+
+        Scaffold(
+            backgroundColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Column {
+                            Text(
+                                "Storage Cleanup",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (photos.isNotEmpty()) {
+                                Text(
+                                    text = "${photos.size} photos • ${formatFileSize(photos.sumOf { it.size })}",
+                                    style = MaterialTheme.typography.caption,
+                                    color = Color.White.copy(alpha = 0.8f)
                                 )
                             }
                         }
-
-                        PhotoStatsBar(
-                            totalPhotos = photos.size,
-                            selectedPhotos = selectedPhotos.size,
-                            totalSize = photos.sumOf { it.size },
-                            selectedSize = photos.filter { selectedPhotos.contains(it.uri) }.sumOf { it.size }
-                        )
-
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
-                            contentPadding = PaddingValues(4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            items(photos) { photo ->
-                                EnhancedPhotoGridItem(
-                                    photo = photo,
-                                    isSelected = selectedPhotos.contains(photo.uri),
-                                    onToggleSelection = {
-                                        selectedPhotos = if (selectedPhotos.contains(photo.uri)) {
-                                            selectedPhotos - photo.uri
-                                        } else {
-                                            selectedPhotos + photo.uri
-                                        }
+                    },
+                    backgroundColor = NeonPink,
+                    contentColor = Color.White,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                    },
+                    actions = {
+                        if (photos.isNotEmpty()) {
+                            IconButton(
+                                onClick = {
+                                    selectedPhotos = if (selectedPhotos.size == photos.size) {
+                                        emptySet()
+                                    } else {
+                                        photos.map { it.uri }.toSet()
                                     }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (selectedPhotos.size == photos.size) {
+                                        Icons.Default.CheckBoxOutlineBlank
+                                    } else {
+                                        Icons.Default.CheckBox
+                                    },
+                                    contentDescription = "Select All",
+                                    tint = Color.White
+                                )
+                            }
+                            IconButton(
+                                onClick = { showAnalysis = !showAnalysis }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Analytics,
+                                    contentDescription = "Analysis",
+                                    tint = Color.White
                                 )
                             }
                         }
                     }
+                )
+            },
+            floatingActionButton = {
+                if (selectedPhotos.isNotEmpty()) {
+                    FloatingActionButton(
+                        onClick = { showDeleteDialog = true },
+                        backgroundColor = ErrorRed
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when {
+                    !permissionState.status.isGranted -> {
+                        PermissionRequestContent(
+                            onRequestPermission = { permissionLauncher.launch(permission) },
+                            shouldShowRationale = permissionState.status.shouldShowRationale
+                        )
+                    }
+                    isScanning -> {
+                        LoadingContent("Scanning and analyzing photos...")
+                    }
+                    photos.isEmpty() -> {
+                        EmptyContent(
+                            onScanClick = {
+                                scope.launch {
+                                    isScanning = true
+                                    val scannedPhotos = scanPhotos(context.contentResolver)
+                                    photos = scannedPhotos
+                                    photoAnalysis = analyzePhotos(scannedPhotos)
+                                    isScanning = false
+                                    showAnalysis = true
+                                }
+                            }
+                        )
+                    }
+                    else -> {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            AnimatedVisibility(
+                                visible = showAnalysis,
+                                enter = slideInVertically() + fadeIn(),
+                                exit = slideOutVertically() + fadeOut()
+                            ) {
+                                photoAnalysis?.let { analysis ->
+                                    PhotoAnalysisCard(
+                                        analysis = analysis,
+                                        onCategorySelected = { category ->
+                                            currentFilter = category
+                                            selectedPhotos = when (category) {
+                                                PhotoCategory.SCREENSHOTS -> analysis.screenshots.map { it.uri }.toSet()
+                                                PhotoCategory.LARGE_FILES -> analysis.largeFiles.map { it.uri }.toSet()
+                                                PhotoCategory.OLD_PHOTOS -> analysis.oldPhotos.map { it.uri }.toSet()
+                                                PhotoCategory.DUPLICATES -> analysis.duplicates.map { it.uri }.toSet()
+                                                PhotoCategory.OTHER -> emptySet()
+                                            }
+                                        }
+                                    )
+                                }
+                            }
 
-            if (isDeleting) {
-                LoadingContent("Deleting photos...")
+                            PhotoStatsBar(
+                                totalPhotos = photos.size,
+                                selectedPhotos = selectedPhotos.size,
+                                totalSize = photos.sumOf { it.size },
+                                selectedSize = photos.filter { selectedPhotos.contains(it.uri) }.sumOf { it.size }
+                            )
+
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(3),
+                                contentPadding = PaddingValues(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                items(photos) { photo ->
+                                    EnhancedPhotoGridItem(
+                                        photo = photo,
+                                        isSelected = selectedPhotos.contains(photo.uri),
+                                        onToggleSelection = {
+                                            selectedPhotos = if (selectedPhotos.contains(photo.uri)) {
+                                                selectedPhotos - photo.uri
+                                            } else {
+                                                selectedPhotos + photo.uri
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (isDeleting) {
+                    LoadingContent("Deleting photos...")
+                }
             }
         }
     }
@@ -278,10 +308,19 @@ fun PhotoCleanupScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Photos") },
+            backgroundColor = CardBackground,
+            title = { 
+                Text(
+                    "Delete Photos",
+                    color = Color.White
+                ) 
+            },
             text = { 
                 Column {
-                    Text("Are you sure you want to delete ${selectedPhotos.size} photo(s)?")
+                    Text(
+                        "Are you sure you want to delete ${selectedPhotos.size} photo(s)?",
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "This will free up ${formatFileSize(photos.filter { selectedPhotos.contains(it.uri) }.sumOf { it.size })}",
@@ -309,7 +348,7 @@ fun PhotoCleanupScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = Color.White)
                 }
             }
         )
@@ -326,7 +365,8 @@ fun PhotoAnalysisCard(
             .fillMaxWidth()
             .padding(8.dp),
         elevation = 6.dp,
-        backgroundColor = CloudBlue.copy(alpha = 0.1f)
+        backgroundColor = CardBackground.copy(alpha = 0.9f),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -335,6 +375,7 @@ fun PhotoAnalysisCard(
                 text = "Smart Analysis",
                 style = MaterialTheme.typography.h3,
                 fontWeight = FontWeight.Bold,
+                color = Color.White,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -369,7 +410,7 @@ fun PhotoAnalysisCard(
                 if (analysis.oldPhotos.isNotEmpty()) {
                     CategoryChip(
                         text = "Old Photos (${analysis.oldPhotos.size})",
-                        color = CloudBlue,
+                        color = ElectricBlue,
                         onClick = { onCategorySelected(PhotoCategory.OLD_PHOTOS) },
                         modifier = Modifier.weight(1f)
                     )
@@ -427,7 +468,7 @@ fun PermissionRequestContent(
             imageVector = Icons.Default.PhotoLibrary,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = CloudBlue
+            tint = NeonPink
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -435,7 +476,8 @@ fun PermissionRequestContent(
         Text(
             text = "Storage Permission Required",
             style = MaterialTheme.typography.h3,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -447,14 +489,14 @@ fun PermissionRequestContent(
                 "Please grant storage permission to continue."
             },
             style = MaterialTheme.typography.body1,
-            color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f)
+            color = Color.White.copy(alpha = 0.7f)
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onRequestPermission,
-            colors = ButtonDefaults.buttonColors(backgroundColor = CloudBlue)
+            colors = ButtonDefaults.buttonColors(backgroundColor = NeonPink)
         ) {
             Text("Grant Permission", color = Color.White)
         }
@@ -474,7 +516,7 @@ fun EmptyContent(onScanClick: () -> Unit) {
             imageVector = Icons.Default.Search,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = CloudBlue
+            tint = NeonPink
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -482,7 +524,8 @@ fun EmptyContent(onScanClick: () -> Unit) {
         Text(
             text = "No Photos Found",
             style = MaterialTheme.typography.h3,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -490,16 +533,16 @@ fun EmptyContent(onScanClick: () -> Unit) {
         Text(
             text = "Scan your device to find and analyze photos",
             style = MaterialTheme.typography.body1,
-            color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f)
+            color = Color.White.copy(alpha = 0.7f)
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onScanClick,
-            colors = ButtonDefaults.buttonColors(backgroundColor = CloudBlue)
+            colors = ButtonDefaults.buttonColors(backgroundColor = NeonPink)
         ) {
-            Icon(Icons.Default.Search, contentDescription = null)
+            Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Scan Photos", color = Color.White)
         }
@@ -511,20 +554,24 @@ fun LoadingContent(message: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.3f)),
+            .background(DarkBackground.copy(alpha = 0.8f)),
         contentAlignment = Alignment.Center
     ) {
         Card(
             shape = MaterialTheme.shapes.medium,
-            elevation = 8.dp
+            elevation = 8.dp,
+            backgroundColor = CardBackground
         ) {
             Column(
                 modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CircularProgressIndicator(color = CloudBlue)
+                CircularProgressIndicator(color = NeonPink)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(message)
+                Text(
+                    text = message,
+                    color = Color.White
+                )
             }
         }
     }
@@ -542,7 +589,7 @@ fun PhotoStatsBar(
             .fillMaxWidth()
             .padding(8.dp),
         elevation = 4.dp,
-        backgroundColor = CloudBlue.copy(alpha = 0.1f)
+        backgroundColor = CardBackground.copy(alpha = 0.9f)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -553,12 +600,13 @@ fun PhotoStatsBar(
                 Text(
                     text = "$totalPhotos Photos",
                     style = MaterialTheme.typography.body1,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
                 )
                 Text(
                     text = formatFileSize(totalSize),
                     style = MaterialTheme.typography.caption,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                    color = Color.White.copy(alpha = 0.6f)
                 )
             }
 
@@ -674,7 +722,7 @@ private fun getCategoryColor(category: PhotoCategory): Color {
     return when (category) {
         PhotoCategory.SCREENSHOTS -> WarningOrange
         PhotoCategory.LARGE_FILES -> ErrorRed
-        PhotoCategory.OLD_PHOTOS -> CloudBlue
+        PhotoCategory.OLD_PHOTOS -> ElectricBlue
         PhotoCategory.DUPLICATES -> SuccessGreen
         PhotoCategory.OTHER -> Color.Gray
     }
