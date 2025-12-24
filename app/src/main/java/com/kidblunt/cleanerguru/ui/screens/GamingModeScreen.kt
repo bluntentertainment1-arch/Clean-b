@@ -30,7 +30,7 @@ import com.kidblunt.cleanerguru.ui.theme.SuccessGreen
 import com.kidblunt.cleanerguru.ui.theme.WarningOrange
 import com.kidblunt.cleanerguru.ui.theme.CardBackground
 import com.kidblunt.cleanerguru.ui.theme.ErrorRed
-import com.kidblunt.cleanerguru.data.manager.GamingModeManager
+import com.kidblunt.cleanerguru.manager.GamingModeManager
 import kotlinx.coroutines.delay
 
 @Composable
