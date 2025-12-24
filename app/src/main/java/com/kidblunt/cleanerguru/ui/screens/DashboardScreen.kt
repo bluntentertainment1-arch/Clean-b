@@ -36,8 +36,8 @@ import androidx.compose.ui.unit.sp
 import com.kidblunt.cleanerguru.ui.theme.*
 import com.kidblunt.cleanerguru.ui.components.TwinklingStarsBackground
 import com.kidblunt.cleanerguru.ui.components.HeartRateMonitor
-import com.kidblunt.cleanerguru.data.manager.GamingModeManager
-import com.kidblunt.cleanerguru.data.manager.BatterySaverManager
+import com.kidblunt.cleanerguru.manager.GamingModeManager
+import com.kidblunt.cleanerguru.manager.BatterySaverManager
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
