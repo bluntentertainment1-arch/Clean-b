@@ -37,7 +37,7 @@
     <!-- Quick Optimize -->
 <string name="quick_optimize">Quick Optimize</string>
 <string name="quick_optimize_desc">
-    Applies smart performance & battery optimization
+    Applies smart performance &amp; battery optimization
 </string>
 
 <!-- Battery Saver -->
