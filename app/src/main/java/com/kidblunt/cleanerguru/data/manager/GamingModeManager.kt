@@ -1,4 +1,4 @@
-package com.kidblunt.cleanerguru.manager
+package com.kidblunt.cleanerguru.data.manager
 
 import android.content.Context
 import android.content.SharedPreferences
