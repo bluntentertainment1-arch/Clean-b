@@ -27,7 +27,7 @@
         tools:targetApi="31">
         <activity
             android:exported="true"
-            android:name="com.kidblunt.cleanerguru.SplashActivity"
+            android:name="com.kidblunt.cleanerguru.MainActivity"
             android:theme="@style/Theme.CleanerGuru.Splash">
             <intent-filter>
                 <action
