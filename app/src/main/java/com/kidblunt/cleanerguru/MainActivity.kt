@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         var userId = sharedPreferences.getString("user_id", "")
     
         
-        installSplashScreen()
+        
         
         setContent {
             CleanerGuruTheme {
